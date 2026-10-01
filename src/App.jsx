@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useUser } from './hooks/useUser';
 import { useBoards } from './hooks/useBoards';
 import { useTasks } from './hooks/useTasks';
 import { login, register, logout } from './services/auth';
 import { createBoard, deleteBoard } from './services/boards';
 import { createTask, updateTaskStatus, deleteTask } from './services/tasks';
-import { useState } from 'react';
+import Feed from './pages/Feed';
 
 export default function App() {
   const user = useUser();
@@ -13,7 +14,9 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState(null);
 
- 
+  // Tab-Verwaltung ("boards" oder "feed")
+  const [currentTab, setCurrentTab] = useState('boards');
+
   const [activeBoardId, setActiveBoardId] = useState(null);
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -73,18 +76,46 @@ export default function App() {
     <div className="min-h-screen bg-slate-100 flex flex-col justify-between font-sans">
       {/* Header */}
       <header className="bg-white shadow p-4 flex justify-between items-center px-8">
-        <h1 className="text-xl font-bold text-slate-800 cursor-pointer" onClick={() => setActiveBoardId(null)}>
-          📌 To-Do Board
+        <h1 
+          className="text-xl font-bold text-slate-800 cursor-pointer flex items-center gap-2" 
+          onClick={() => { setActiveBoardId(null); setCurrentTab('boards'); }}
+        >
+          <span>📌</span> To-Do Board & Feed
         </h1>
+
         {user && (
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-600">{user.email}</span>
-            <button
-              onClick={() => logout()}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm transition"
-            >
-              Abmelden
-            </button>
+          <div className="flex items-center gap-6">
+            {/* Navigation Tabs */}
+            <div className="hidden sm:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setCurrentTab('boards')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  currentTab === 'boards' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                📋 Boards
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentTab('feed')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  currentTab === 'feed' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ✨ Feed
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 border-l pl-4 border-slate-200">
+              <span className="text-sm text-slate-600 font-medium">{user.email}</span>
+              <button
+                onClick={() => logout()}
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
+              >
+                Abmelden
+              </button>
+            </div>
           </div>
         )}
       </header>
@@ -93,11 +124,11 @@ export default function App() {
       <main className="flex-grow p-6 max-w-4xl mx-auto w-full">
         {!user ? (
           /* Login / Register Form */
-          <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md mx-auto mt-12">
+          <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md mx-auto mt-12 border border-slate-200">
             <h2 className="text-2xl font-bold mb-6 text-center text-slate-800">
               {isRegistering ? 'Registrieren' : 'Anmelden'}
             </h2>
-            {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
+            {error && <div className="bg-red-100 text-red-700 p-3 rounded-xl mb-4 text-sm font-medium">{error}</div>}
             <form onSubmit={handleAuth} className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">E-Mail</label>
@@ -106,7 +137,7 @@ export default function App() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
               <div>
@@ -116,35 +147,46 @@ export default function App() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-medium transition mt-2">
+              <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white p-3 rounded-xl font-bold transition mt-2 cursor-pointer shadow-sm">
                 {isRegistering ? 'Registrieren' : 'Anmelden'}
               </button>
             </form>
             <div className="mt-4 text-center">
-              <button onClick={() => setIsRegistering(!isRegistering)} className="text-sm text-blue-600 hover:underline">
+              <button onClick={() => setIsRegistering(!isRegistering)} className="text-sm text-slate-600 hover:underline font-medium cursor-pointer">
                 {isRegistering ? 'Bereits einen Account? Anmelden' : 'Noch kein Account? Registrieren'}
               </button>
             </div>
           </div>
+        ) : currentTab === 'feed' ? (
+          /* Social Feed Seite */
+          <Feed user={user} />
         ) : !activeBoardId ? (
           /* Boards Ansicht */
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-4">Deine Boards</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Deine Boards</h2>
+              <button
+                type="button"
+                onClick={() => setCurrentTab('feed')}
+                className="sm:hidden bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
+              >
+                ✨ Zum Feed
+              </button>
+            </div>
             
-            {/* Yeni Board Ekleme Formu */}
-            <form onSubmit={handleCreateBoard} className="flex gap-2 mb-6">
-              Neues Board erstellen:
+            {/* Neues Board Erstellen Formular */}
+            <form onSubmit={handleCreateBoard} className="flex gap-2 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
               <input
                 type="text"
-                placeholder="Board Titel..."
+                placeholder="Neuer Board-Titel..."
                 value={newBoardTitle}
                 onChange={(e) => setNewBoardTitle(e.target.value)}
-                className="flex-grow border border-slate-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-grow border border-slate-300 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
               />
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+              <button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition cursor-pointer">
                 Erstellen
               </button>
             </form>
@@ -161,12 +203,12 @@ export default function App() {
                   <div
                     key={board.id}
                     onClick={() => setActiveBoardId(board.id)}
-                    className="bg-white p-4 rounded-xl shadow hover:shadow-md cursor-pointer transition flex justify-between items-center border border-slate-200"
+                    className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition flex justify-between items-center border border-slate-200 group"
                   >
-                    <span className="font-semibold text-slate-800">{board.title}</span>
+                    <span className="font-bold text-slate-800 group-hover:text-teal-700 transition">{board.title}</span>
                     <button
                       onClick={(e) => handleDeleteBoard(board.id, e)}
-                      className="text-red-500 hover:text-red-700 text-sm px-2 py-1"
+                      className="text-red-500 hover:text-red-700 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
                     >
                       Löschen
                     </button>
@@ -176,27 +218,26 @@ export default function App() {
             )}
           </div>
         ) : (
-         
+          /* Einzelne Board Aufgaben */
           <div>
             <button
               onClick={() => setActiveBoardId(null)}
-              className="mb-4 text-blue-600 hover:underline text-sm font-medium"
+              className="mb-4 text-slate-600 hover:text-slate-900 text-sm font-bold flex items-center gap-1 cursor-pointer"
             >
               &larr; Zurück zu allen Boards
             </button>
 
-            <h2 className="text-2xl font-bold text-slate-800 mb-4">Board Aufgaben</h2>
-
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Board-Aufgaben</h2>
             
-            <form onSubmit={handleCreateTask} className="flex gap-2 mb-6">
+            <form onSubmit={handleCreateTask} className="flex gap-2 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
               <input
                 type="text"
                 placeholder="Neue Aufgabe..."
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="flex-grow border border-slate-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-grow border border-slate-300 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
               />
-              <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">
+              <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition cursor-pointer">
                 Hinzufügen
               </button>
             </form>
@@ -210,15 +251,15 @@ export default function App() {
             ) : (
               <div className="flex flex-col gap-3">
                 {tasks.map((task) => (
-                  <div key={task.id} className="bg-white p-4 rounded-xl shadow flex justify-between items-center border border-slate-200">
-                    <span className={`font-medium ${task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                  <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-slate-200">
+                    <span className={`font-medium text-sm ${task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                       {task.title}
                     </span>
                     <div className="flex items-center gap-3">
                       <select
                         value={task.status}
                         onChange={(e) => updateTaskStatus(task.id, e.target.value)}
-                        className="border border-slate-300 rounded p-1 text-sm bg-slate-50"
+                        className="border border-slate-300 rounded-xl p-1.5 text-xs font-semibold bg-slate-50 cursor-pointer"
                       >
                         <option value="todo">Todo</option>
                         <option value="doing">Doing</option>
@@ -226,7 +267,7 @@ export default function App() {
                       </select>
                       <button
                         onClick={() => deleteTask(task.id)}
-                        className="text-red-500 hover:text-red-700 text-sm"
+                        className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer px-2 py-1"
                       >
                         Löschen
                       </button>
@@ -239,9 +280,9 @@ export default function App() {
         )}
       </main>
 
-   
-      <footer className="bg-white border-t p-4 text-center text-sm text-slate-500">
-        To-Do-Board App &copy; 2026
+      {/* Footer */}
+      <footer className="bg-white border-t p-4 text-center text-xs text-slate-500 font-medium">
+        To-Do-Board & Feed App &copy; 2026
       </footer>
     </div>
   );
